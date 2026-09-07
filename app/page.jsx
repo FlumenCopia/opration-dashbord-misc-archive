@@ -3,10 +3,23 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import Modal from '@/components/Modal';
-import initialDb from '@/db.json';
+
+const defaultState = {
+  hero: { billed: 646617, banked: 179863, subtext: "Misc Archive Private Limited. From here the whole outcome turns on a single number.", notice: "At 85% collection you break even. At 90% plus ₹1L of new recurring revenue you build wealth." },
+  datedItems: [],
+  tasks: { w1: [], w2: [] },
+  dayBoard: { morning: [], midday: [], afternoon: [] },
+  collections: [],
+  outflows: [],
+  growthTarget: { label: "₹10L/mo" },
+  revenueLadder: [],
+  debtLadder: [],
+  team: { members: [] },
+  phases: []
+};
 
 export default function Dashboard() {
-  const [state, setState] = useState(initialDb);
+  const [state, setState] = useState(defaultState);
   const [activeTab, setActiveTab] = useState('p-now');
   const [statusMsg, setStatusMsg] = useState('Connecting to Supabase...');
   const [isLive, setIsLive] = useState(false);

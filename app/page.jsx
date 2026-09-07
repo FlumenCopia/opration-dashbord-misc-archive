@@ -192,8 +192,8 @@ export default function Dashboard() {
             <button className="ghost sm-btn" onClick={exportToPDF} style={{ borderColor: 'var(--ochre)', color: 'var(--ochre)', fontWeight: 600 }}>
               📄 Export PDF Report
             </button>
-            <button className="ghost sm-btn" onClick={() => editHeroStats()}>
-              Edit Stats
+            <button className="btn-primary sm-btn" onClick={() => editHeroStats()}>
+              ✏️ Edit Hero Stats
             </button>
           </div>
         </div>
@@ -257,7 +257,10 @@ export default function Dashboard() {
                 <div>
                   <strong>{it.date}: {it.title}</strong> — {it.details}
                 </div>
-                <button className="btn-danger sm-btn" onClick={() => deleteDatedItem(it.id)}>del</button>
+                <div style={{ display: 'flex', gap: '6px' }}>
+                  <button className="btn-edit sm-btn" onClick={() => editDatedItem(it)}>✏️ Edit</button>
+                  <button className="btn-danger sm-btn" onClick={() => deleteDatedItem(it.id)}>Del</button>
+                </div>
               </div>
             ))}
           </div>
@@ -278,7 +281,10 @@ export default function Dashboard() {
                   <strong>{t.title}</strong>
                   <span className="why">{t.why}</span>
                 </label>
-                <button className="btn-danger sm-btn" onClick={() => deleteTask(t.id)}>del</button>
+                <div style={{ display: 'flex', gap: '6px' }}>
+                  <button className="btn-edit sm-btn" onClick={() => editTaskItem(t)}>✏️ Edit</button>
+                  <button className="btn-danger sm-btn" onClick={() => deleteTask(t.id)}>Del</button>
+                </div>
               </div>
             ))}
           </div>
@@ -299,7 +305,10 @@ export default function Dashboard() {
                   <strong>{t.title}</strong>
                   <span className="why">{t.why}</span>
                 </label>
-                <button className="btn-danger sm-btn" onClick={() => deleteTask(t.id)}>del</button>
+                <div style={{ display: 'flex', gap: '6px' }}>
+                  <button className="btn-edit sm-btn" onClick={() => editTaskItem(t)}>✏️ Edit</button>
+                  <button className="btn-danger sm-btn" onClick={() => deleteTask(t.id)}>Del</button>
+                </div>
               </div>
             ))}
           </div>
@@ -312,7 +321,7 @@ export default function Dashboard() {
           <div className="grid2">
             <div className="block">
               <div className="block-header">
-                <h2>Retainer Collections (Table: `collections`)</h2>
+                <h2>Retainer Collections</h2>
                 <button className="ghost sm-btn" onClick={() => addCollection()}>+ Add Client</button>
               </div>
               <table>
@@ -321,7 +330,7 @@ export default function Dashboard() {
                     <th>Paid</th>
                     <th>Client</th>
                     <th className="n">Amount</th>
-                    <th>Action</th>
+                    <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -336,7 +345,12 @@ export default function Dashboard() {
                       </td>
                       <td>{c.name}</td>
                       <td className="n">{inr(c.amount)}</td>
-                      <td><button className="btn-danger sm-btn" onClick={() => deleteCollection(c.id)}>del</button></td>
+                      <td>
+                        <div style={{ display: 'flex', gap: '4px', justifyContent: 'flex-end' }}>
+                          <button className="btn-edit sm-btn" onClick={() => editCollectionItem(c)}>✏️ Edit</button>
+                          <button className="btn-danger sm-btn" onClick={() => deleteCollection(c.id)}>Del</button>
+                        </div>
+                      </td>
                     </tr>
                   ))}
                   <tr className="total">
@@ -350,7 +364,7 @@ export default function Dashboard() {
 
             <div className="block">
               <div className="block-header">
-                <h2>Monthly Outflows (Table: `outflows`)</h2>
+                <h2>Monthly Outflows</h2>
                 <button className="ghost sm-btn" onClick={() => addOutflow()}>+ Add Outflow</button>
               </div>
               <table>
@@ -358,7 +372,7 @@ export default function Dashboard() {
                   <tr>
                     <th>Commitment</th>
                     <th className="n">Monthly Cost</th>
-                    <th>Action</th>
+                    <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -366,7 +380,12 @@ export default function Dashboard() {
                     <tr key={o.id}>
                       <td>{o.item}</td>
                       <td className="n">{inr(o.amount)}</td>
-                      <td><button className="btn-danger sm-btn" onClick={() => deleteOutflow(o.id)}>del</button></td>
+                      <td>
+                        <div style={{ display: 'flex', gap: '4px', justifyContent: 'flex-end' }}>
+                          <button className="btn-edit sm-btn" onClick={() => editOutflowItem(o)}>✏️ Edit</button>
+                          <button className="btn-danger sm-btn" onClick={() => deleteOutflow(o.id)}>Del</button>
+                        </div>
+                      </td>
                     </tr>
                   ))}
                   <tr className="total">
@@ -386,7 +405,7 @@ export default function Dashboard() {
         <section className="panel">
           <div className="block">
             <div className="block-header">
-              <h2>Structured Debt Ladder (Table: `debt_ladder`)</h2>
+              <h2>Structured Debt Ladder</h2>
               <button className="ghost sm-btn" onClick={() => addDebtItem()}>+ Add Debt</button>
             </div>
             <table>
@@ -396,7 +415,7 @@ export default function Dashboard() {
                   <th>Creditor</th>
                   <th className="n">Principal</th>
                   <th className="n">EMI / Month</th>
-                  <th>Action</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -406,7 +425,12 @@ export default function Dashboard() {
                     <td><strong>{d.name}</strong> <span className="tiny muted">({d.rate})</span></td>
                     <td className="n">{inr(d.amount)}</td>
                     <td className="n">{inr(d.emi)}</td>
-                    <td><button className="btn-danger sm-btn" onClick={() => deleteDebtItem(d.id)}>del</button></td>
+                    <td>
+                      <div style={{ display: 'flex', gap: '4px', justifyContent: 'flex-end' }}>
+                        <button className="btn-edit sm-btn" onClick={() => editDebtItemDetails(d)}>✏️ Edit</button>
+                        <button className="btn-danger sm-btn" onClick={() => deleteDebtItem(d.id)}>Del</button>
+                      </div>
+                    </td>
                   </tr>
                 ))}
                 <tr className="total">
@@ -425,13 +449,17 @@ export default function Dashboard() {
         <section className="panel">
           <div className="grid2">
             <div className="block">
-              <h2>Team Roster (Table: `team_members`)</h2>
+              <div className="block-header">
+                <h2>Team Roster</h2>
+                <button className="ghost sm-btn" onClick={() => addTeamMember()}>+ Add Member</button>
+              </div>
               <table>
                 <thead>
                   <tr>
                     <th>Member</th>
                     <th>Role</th>
                     <th className="n">Monthly Pay</th>
+                    <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -440,11 +468,18 @@ export default function Dashboard() {
                       <td><strong>{m.name}</strong></td>
                       <td>{m.role}</td>
                       <td className="n">{inr(m.pay)}</td>
+                      <td>
+                        <div style={{ display: 'flex', gap: '4px', justifyContent: 'flex-end' }}>
+                          <button className="btn-edit sm-btn" onClick={() => editTeamMemberDetails(m)}>✏️ Edit</button>
+                          <button className="btn-danger sm-btn" onClick={() => deleteTeamMember(m.id)}>Del</button>
+                        </div>
+                      </td>
                     </tr>
                   ))}
                   <tr className="total">
                     <td colSpan="2">Total Payroll ({headCount} heads)</td>
                     <td className="n">{inr(salarySum)}</td>
+                    <td></td>
                   </tr>
                 </tbody>
               </table>
@@ -469,7 +504,7 @@ export default function Dashboard() {
       {activeTab === 'p-plan' && (
         <section className="panel">
           <div className="block">
-            <h2>The 4 Strategic Phases (Table: `phases`)</h2>
+            <h2>The 4 Strategic Phases</h2>
             {phases.map((ph) => (
               <div key={ph.id} style={{ borderLeft: '3px solid var(--teal)', paddingLeft: '16px', marginBottom: '20px' }}>
                 <p className="tiny muted num">{ph.timeline}</p>
@@ -512,7 +547,7 @@ export default function Dashboard() {
     </div>
   );
 
-  // --- RELATIONAL CRUD ACTIONS ---
+  // --- RELATIONAL CRUD & EDIT ACTIONS ---
   async function editHeroStats() {
     let bVal = hero.billed;
     let kVal = hero.banked;
@@ -557,6 +592,25 @@ export default function Dashboard() {
       }
     );
   }
+  async function editDatedItem(item) {
+    let date = item.date, title = item.title, details = item.details;
+    openModal(
+      'Edit Dated & Critical Item',
+      (
+        <>
+          <div className="form-group"><label>Date / Deadline</label><input type="text" defaultValue={date} onChange={(e) => (date = e.target.value)} /></div>
+          <div className="form-group"><label>Title</label><input type="text" defaultValue={title} onChange={(e) => (title = e.target.value)} /></div>
+          <div className="form-group"><label>Details</label><textarea defaultValue={details} onChange={(e) => (details = e.target.value)} /></div>
+        </>
+      ),
+      async () => {
+        const payload = { ...item, date, title, details };
+        setDatedItems(datedItems.map(it => it.id === item.id ? payload : it));
+        await supabase.from('dated_items').update(payload).eq('id', item.id);
+        showFlag('Item Updated');
+      }
+    );
+  }
   async function deleteDatedItem(id) {
     setDatedItems(datedItems.filter(it => it.id !== id));
     await supabase.from('dated_items').delete().eq('id', id);
@@ -578,6 +632,27 @@ export default function Dashboard() {
         setTasks({ ...tasks, [week_key]: [...tasks[week_key], item] });
         await supabase.from('tasks').insert(item);
         showFlag('Task Added');
+      }
+    );
+  }
+  async function editTaskItem(t) {
+    let title = t.title, why = t.why;
+    openModal(
+      'Edit Task Action',
+      (
+        <>
+          <div className="form-group"><label>Task Title</label><input type="text" defaultValue={title} onChange={(e) => (title = e.target.value)} /></div>
+          <div className="form-group"><label>Why / Rationale</label><textarea defaultValue={why} onChange={(e) => (why = e.target.value)} /></div>
+        </>
+      ),
+      async () => {
+        const payload = { ...t, title, why };
+        setTasks({
+          w1: tasks.w1.map(x => x.id === t.id ? payload : x),
+          w2: tasks.w2.map(x => x.id === t.id ? payload : x)
+        });
+        await supabase.from('tasks').update({ title, why }).eq('id', t.id);
+        showFlag('Task Updated');
       }
     );
   }
@@ -614,6 +689,24 @@ export default function Dashboard() {
       }
     );
   }
+  async function editCollectionItem(c) {
+    let name = c.name, amount = c.amount;
+    openModal(
+      'Edit Retainer Collection',
+      (
+        <>
+          <div className="form-group"><label>Client Name</label><input type="text" defaultValue={name} onChange={(e) => (name = e.target.value)} /></div>
+          <div className="form-group"><label>Amount (₹)</label><input type="number" defaultValue={amount} onChange={(e) => (amount = e.target.value)} /></div>
+        </>
+      ),
+      async () => {
+        const payload = { ...c, name, amount: Number(amount) };
+        setCollections(collections.map(x => x.id === c.id ? payload : x));
+        await supabase.from('collections').update({ name, amount: Number(amount) }).eq('id', c.id);
+        showFlag('Collection Updated');
+      }
+    );
+  }
   async function toggleCollection(id, done) {
     setCollections(collections.map(c => (c.id === id ? { ...c, done } : c)));
     await supabase.from('collections').update({ done }).eq('id', id);
@@ -638,6 +731,24 @@ export default function Dashboard() {
         setOutflows([...outflows, payload]);
         await supabase.from('outflows').insert(payload);
         showFlag('Outflow Added');
+      }
+    );
+  }
+  async function editOutflowItem(o) {
+    let item = o.item, amount = o.amount;
+    openModal(
+      'Edit Monthly Outflow',
+      (
+        <>
+          <div className="form-group"><label>Expense Name</label><input type="text" defaultValue={item} onChange={(e) => (item = e.target.value)} /></div>
+          <div className="form-group"><label>Monthly Cost (₹)</label><input type="number" defaultValue={amount} onChange={(e) => (amount = e.target.value)} /></div>
+        </>
+      ),
+      async () => {
+        const payload = { ...o, item, amount: Number(amount) };
+        setOutflows(outflows.map(x => x.id === o.id ? payload : x));
+        await supabase.from('outflows').update({ item, amount: Number(amount) }).eq('id', o.id);
+        showFlag('Outflow Updated');
       }
     );
   }
@@ -666,8 +777,71 @@ export default function Dashboard() {
       }
     );
   }
+  async function editDebtItemDetails(d) {
+    let name = d.name, amount = d.amount, emi = d.emi, rate = d.rate;
+    openModal(
+      'Edit Debt Entry',
+      (
+        <>
+          <div className="form-group"><label>Creditor Name</label><input type="text" defaultValue={name} onChange={(e) => (name = e.target.value)} /></div>
+          <div className="form-group"><label>Principal Balance (₹)</label><input type="number" defaultValue={amount} onChange={(e) => (amount = e.target.value)} /></div>
+          <div className="form-group"><label>Monthly EMI (₹)</label><input type="number" defaultValue={emi} onChange={(e) => (emi = e.target.value)} /></div>
+          <div className="form-group"><label>Rate / Terms</label><input type="text" defaultValue={rate} onChange={(e) => (rate = e.target.value)} /></div>
+        </>
+      ),
+      async () => {
+        const payload = { ...d, name, amount: Number(amount), emi: Number(emi), rate };
+        setDebtLadder(debtLadder.map(x => x.id === d.id ? payload : x));
+        await supabase.from('debt_ladder').update({ name, amount: Number(amount), emi: Number(emi), rate }).eq('id', d.id);
+        showFlag('Debt Updated');
+      }
+    );
+  }
   async function deleteDebtItem(id) {
     setDebtLadder(debtLadder.filter(d => d.id !== id));
     await supabase.from('debt_ladder').delete().eq('id', id);
+  }
+
+  async function addTeamMember() {
+    let name = '', role = '', pay = 0;
+    openModal(
+      'Add Team Member',
+      (
+        <>
+          <div className="form-group"><label>Member Name</label><input type="text" onChange={(e) => (name = e.target.value)} /></div>
+          <div className="form-group"><label>Role</label><input type="text" onChange={(e) => (role = e.target.value)} /></div>
+          <div className="form-group"><label>Monthly Pay (₹)</label><input type="number" onChange={(e) => (pay = e.target.value)} /></div>
+        </>
+      ),
+      async () => {
+        const item = { id: 'tm_' + Date.now(), name, role, pay: Number(pay) };
+        setTeamMembers([...teamMembers, item]);
+        await supabase.from('team_members').insert(item);
+        showFlag('Member Added');
+      }
+    );
+  }
+  async function editTeamMemberDetails(m) {
+    let name = m.name, role = m.role, pay = m.pay;
+    openModal(
+      'Edit Team Member',
+      (
+        <>
+          <div className="form-group"><label>Member Name</label><input type="text" defaultValue={name} onChange={(e) => (name = e.target.value)} /></div>
+          <div className="form-group"><label>Role</label><input type="text" defaultValue={role} onChange={(e) => (role = e.target.value)} /></div>
+          <div className="form-group"><label>Monthly Pay (₹)</label><input type="number" defaultValue={pay} onChange={(e) => (pay = e.target.value)} /></div>
+        </>
+      ),
+      async () => {
+        const payload = { ...m, name, role, pay: Number(pay) };
+        setTeamMembers(teamMembers.map(x => x.id === m.id ? payload : x));
+        await supabase.from('team_members').update({ name, role, pay: Number(pay) }).eq('id', m.id);
+        showFlag('Member Updated');
+      }
+    );
+  }
+  async function deleteTeamMember(id) {
+    setTeamMembers(teamMembers.filter(m => m.id !== id));
+    await supabase.from('team_members').delete().eq('id', id);
   }
 }

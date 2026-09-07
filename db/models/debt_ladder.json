@@ -1,0 +1,29 @@
+{
+  "obligations": [
+    { "id": "d1", "obligation": "RBL card", "amount": 57598, "costTag": "~40% a year", "tagType": "c", "isCar": false },
+    { "id": "d2", "obligation": "One Card", "amount": 49878, "costTag": "~40% a year", "tagType": "c", "isCar": false },
+    { "id": "d3", "obligation": "Axis card", "amount": 41507, "costTag": "~40% a year", "tagType": "c", "isCar": false },
+    { "id": "d4", "obligation": "SBI card", "amount": 25688, "costTag": "~40% a year", "tagType": "c", "isCar": false },
+    { "id": "d5", "obligation": "Gold pledge, via Kannan", "amount": 220000, "costTag": "family gold at risk", "tagType": "b", "isCar": false },
+    { "id": "d6", "obligation": "Space Bar / systems", "amount": 229600, "costTag": "₹32,800 × ~7 left", "tagType": "b", "isCar": false },
+    { "id": "d7", "obligation": "Sunny — expenses recognised now", "amount": 294000, "costTag": "salary claim deferred, in writing", "tagType": "b", "isCar": false },
+    { "id": "d8", "obligation": "Vishnu, net of ₹25,000 back", "amount": 136000, "costTag": "informal", "tagType": "", "isCar": false },
+    { "id": "d9", "obligation": "Rohini, incl. rent", "amount": 105000, "costTag": "informal", "tagType": "", "isCar": false },
+    { "id": "d10", "obligation": "Sonu", "amount": 50000, "costTag": "informal", "tagType": "", "isCar": false },
+    { "id": "d11", "obligation": "Ramani", "amount": 50000, "costTag": "informal", "tagType": "", "isCar": false },
+    { "id": "d12", "obligation": "ICICI car loan", "amount": 2000000, "costTag": "8.85% — cheapest money you hold", "tagType": "a", "isCar": true }
+  ],
+  "payoffOrder": [
+    "Kannan ₹2,20,000 — releases the family gold",
+    "Ramani ₹50,000",
+    "Credit cards ₹1,74,671",
+    "Space Bar, then Sonu, Vishnu, Rohini, Sunny",
+    "Car loan last"
+  ],
+  "notes": {
+    "orderCostDesc": "Cards burn about ₹5,800 a month at 40%. A gold pledge at 12% on ₹2.2 lakh burns about ₹2,200. Gold first costs roughly ₹3,600 a month — a defensible price for protecting family gold, as long as it is a choice and not an accident.",
+    "orderCallout": "Ask first: ₹2.2 lakh borrowed against ₹10 lakh of gold is 22% loan-to-value, where lenders go to 75%. Partial repayment should free far more gold than it costs. If partial release works, you protect the gold and clear the cards, and the trade-off disappears.",
+    "cardConvertNote": "₹1,74,671 at ~40% costs ₹69,900 a year. The same balance at 15% on a bank EMI plan costs ₹26,200. Four phone calls, ₹43,700 a year. The highest return per hour anywhere in this file.",
+    "goldBufferNote": "Releasing ₹70,000 a month as an EMI backstop will get you through a bad month, and it is also how family gold becomes permanently pledged. Set a written cap on total gold pledged at any one time, and attach a repayment date to every draw before you take it. A buffer without an exit date is not a buffer."
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "weekday": [
+    { "time": "06:30", "task": "Wake. Move for 30 minutes." },
+    { "time": "07:30", "task": "Bank balances and overnight receipts. Two minutes." },
+    { "time": "09:00", "task": "Stand-up, 15 minutes, standing. Blockers only." },
+    { "time": "09:15", "task": "Deep work — the one thing that matters today." },
+    { "time": "12:30", "task": "Lunch, away from the desk." },
+    { "time": "13:30", "task": "Collection calls, then sales calls. Never skipped." },
+    { "time": "15:00", "task": "Client delivery and review." },
+    { "time": "17:00", "task": "Team, one-to-ones, unblocking." },
+    { "time": "18:00", "task": "Log cash in and out. Set tomorrow's one thing." },
+    { "time": "18:30", "task": "Stop. Laptop closed." },
+    { "time": "23:00", "task": "Sleep." }
+  ],
+  "week": [
+    { "time": "Mon", "task": "09:15 money hour — ageing, bank position, the week's plan." },
+    { "time": "Tue", "task": "11:00 and 15:30 client meetings. Relationship before invoice." },
+    { "time": "Wed", "task": "11:00 client meeting · 15:00 delivery audit with leads." },
+    { "time": "Thu", "task": "07:30 BNI · 10:00 new business · 14:00 BNI 1-2-1 · 15:30 client." },
+    { "time": "Fri", "task": "11:00 client meeting · 16:00 scorecard and week close." },
+    { "time": "Sat", "task": "One personal task, then off." },
+    { "time": "Sun", "task": "Off. Last Sunday of the month, a day out with no laptop." },
+    { "time": "Quarterly", "task": "Three days away, Saturday to Monday, booked two weeks ahead." }
+  ],
+  "month": [
+    { "time": "1st", "task": "Salaries out, before anything else leaves." },
+    { "time": "3rd", "task": "Last month closed: billed, collected, spent, kept." },
+    { "time": "5th", "task": "Retainers due. Chase on the 6th." },
+    { "time": "10th", "task": "Ageing review. Past 45 days escalates." },
+    { "time": "15th", "task": "Debt payment day. One line off the ladder." },
+    { "time": "20th", "task": "CA call and GST return. Non-negotiable now." },
+    { "time": "25th", "task": "Next month forecast and hiring check." },
+    { "time": "Last", "task": "One-to-ones. Run the matrix." }
+  ],
+  "quarter": [
+    "Team matrix, everyone, written",
+    "Client profitability after delivery hours",
+    "Price review against the rate card",
+    "Debt ladder recalculated on actual balances",
+    "One skill invested in",
+    "Two days completely away"
+  ]
+}

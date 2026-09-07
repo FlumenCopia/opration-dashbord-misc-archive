@@ -1,0 +1,16 @@
+[
+  { "id": "c0", "name": "Masters", "amount": 250000, "category": "a", "done": false },
+  { "id": "c1", "name": "iLearn", "amount": 62125, "category": "a", "done": false },
+  { "id": "c2", "name": "Welgate", "amount": 60300, "category": "a", "done": false },
+  { "id": "c3", "name": "RWEN", "amount": 59000, "category": "a", "done": false },
+  { "id": "c4", "name": "Susrutha", "amount": 53000, "category": "a", "done": false },
+  { "id": "c5", "name": "Pole Marks", "amount": 42800, "category": "a", "done": false },
+  { "id": "c6", "name": "S Team", "amount": 37880, "category": "a", "done": false },
+  { "id": "c7", "name": "Perfect Interior", "amount": 31380, "category": "a", "done": false },
+  { "id": "c8", "name": "Nova Innovation", "amount": 28000, "category": "a", "done": false },
+  { "id": "c9", "name": "Parshi", "amount": 19375, "category": "a", "done": false },
+  { "id": "c10", "name": "Pranalaya", "amount": 18349, "category": "a", "done": false },
+  { "id": "c11", "name": "RRV", "amount": 12000, "category": "a", "done": false },
+  { "id": "c12", "name": "Moon Holidays", "amount": 3925, "category": "a", "done": false },
+  { "id": "c13", "name": "TWC", "amount": 43000, "category": "c", "done": false }
+]

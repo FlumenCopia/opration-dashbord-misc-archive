@@ -1,0 +1,8 @@
+[
+  { "id": "sc1", "key": "s1", "label": "New conversations started", "target": 5, "targetLabel": "5", "value": "" },
+  { "id": "sc2", "key": "s2", "label": "Proposals sent", "target": 2, "targetLabel": "2", "value": "" },
+  { "id": "sc3", "key": "s3", "label": "Upsell conversations with existing clients", "target": 2, "targetLabel": "2", "value": "" },
+  { "id": "sc4", "key": "s4", "label": "Referrals asked for", "target": 3, "targetLabel": "3", "value": "" },
+  { "id": "sc5", "key": "s5", "label": "Collection calls made", "target": 5, "targetLabel": "5", "value": "" },
+  { "id": "sc6", "key": "s6", "label": "Money actually banked this week", "target": 100000, "targetLabel": "₹1L", "value": "" }
+]

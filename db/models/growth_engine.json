@@ -1,0 +1,31 @@
+{
+  "target": {
+    "subtext": "₹1,00,000 of new monthly recurring revenue is four retainers at ₹25,000. At a 25% close rate that needs 16 proposals. Over a quarter that is 5–6 proposals a month, or one qualified conversation every three days.",
+    "proposalsQuarter": "16",
+    "proposalsMonth": "5–6",
+    "retainersNeeded": "4"
+  },
+  "strategies": [
+    { "id": "gs1", "title": "Upsell what you already have", "desc": "Thirteen live clients on one service line each. A digital marketing client never offered SEO or SAG·EO is the easiest sale in the business — no pitching, no trust-building, no acquisition cost. Two upsell conversations a month." },
+    { "id": "gs2", "title": "Own the wellness vertical", "desc": "Susrutha, Pranalaya, Ayushi. Three Ayurveda and wellness clients is not coincidence, it is a specialism with proof. 'We run digital for Ayurveda hospitals in Kerala' beats 'we do digital marketing', and it lets you charge more." },
+    { "id": "gs3", "title": "BNI, used properly", "desc": "You are Social Media Coordinator at Matrix — a room of business owners who see your work weekly. One structured one-to-one a week with someone you have never pitched." },
+    { "id": "gs4", "title": "Referrals, asked for on a schedule", "desc": "Every client who says something positive gets asked the same day who else you should be talking to. Most agencies never ask." },
+    { "id": "gs5", "title": "Cold outreach, narrow only", "desc": "Into verticals where you hold a case study — education after iLearn, real estate after Masters, interiors after Perfect Interior. Never generic." }
+  ],
+  "revenueLadder": [
+    { "id": "rl1", "name": "Project work", "tag": "paid once", "tagType": "c" },
+    { "id": "rl2", "name": "Monthly retainers", "tag": "predictable", "tagType": "b" },
+    { "id": "rl3", "name": "Multi-service accounts", "tag": "harder to leave", "tagType": "b" },
+    { "id": "rl4", "name": "SAG·EO as a named product", "tag": "premium, proprietary", "tagType": "a" },
+    { "id": "rl5", "name": "COSMICX, second market", "tag": "new customer base", "tagType": "a" },
+    { "id": "rl6", "name": "Software subscriptions", "tag": "earns without you", "tagType": "a" }
+  ],
+  "assetSteps": [
+    { "id": "ast1", "title": "One month of payroll in reserve", "desc": "₹2.4 lakh, separate account, untouched. This is the first asset and the one that ends the cycle of pledging gold to make salaries." },
+    { "id": "ast2", "title": "Clear the 40% debt", "desc": "Paying off a card returns 40% guaranteed. No investment available to you beats that." },
+    { "id": "ast3", "title": "Three months of expenses", "desc": "₹11.5 lakh. The business now survives a bad quarter without you funding it personally." },
+    { "id": "ast4", "title": "Systematic investing, small and automatic", "desc": "₹10,000 a month on a standing instruction. The amount is irrelevant; the habit and the date are the point." },
+    { "id": "ast5", "title": "Property proceeds, deployed to a plan written before the money lands", "desc": "Liabilities, buffer, Section 54 reinvestment, then growth. Money that arrives without a plan gets spent." },
+    { "id": "ast6", "title": "Three income sources", "desc": "Services, products, capital. That is what makes wealth durable rather than a good year." }
+  ]
+}

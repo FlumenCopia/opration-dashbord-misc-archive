@@ -6,10 +6,19 @@ import Modal from '@/components/Modal';
 import * as XLSX from 'xlsx';
 
 export default function Dashboard() {
-  const [state, setState] = useState(null);
+  const [hero, setHero] = useState({ billed: 646617, banked: 179863, subtext: '', notice: '' });
+  const [collections, setCollections] = useState([]);
+  const [outflows, setOutflows] = useState([]);
+  const [debtLadder, setDebtLadder] = useState([]);
+  const [teamMembers, setTeamMembers] = useState([]);
+  const [tasks, setTasks] = useState({ w1: [], w2: [] });
+  const [datedItems, setDatedItems] = useState([]);
+  const [scorecard, setScorecard] = useState([]);
+  const [phases, setPhases] = useState([]);
+  
   const [activeTab, setActiveTab] = useState('p-now');
   const [statusMsg, setStatusMsg] = useState('Connecting to Supabase...');
-  const [isLive, setIsLive] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [modalConfig, setModalConfig] = useState({ isOpen: false, title: '', content: null, onSave: null });
 
   // Format currency helper
@@ -22,64 +31,73 @@ export default function Dashboard() {
     }, 3000);
   };
 
-  // Save state to Supabase & LocalStorage
-  const saveState = async (newState) => {
-    setState(newState);
+  // Fetch relational data from Supabase tables
+  const loadData = async () => {
     try {
-      localStorage.setItem('ma_console_db_v4', JSON.stringify(newState));
-    } catch (e) {}
+      const [
+        { data: hData },
+        { data: cData },
+        { data: oData },
+        { data: dData },
+        { data: tmData },
+        { data: tData },
+        { data: dtData },
+        { data: scData },
+        { data: phData },
+        { data: phiData }
+      ] = await Promise.all([
+        supabase.from('hero_metrics').select('*').single(),
+        supabase.from('collections').select('*').order('created_at', { ascending: true }),
+        supabase.from('outflows').select('*').order('created_at', { ascending: true }),
+        supabase.from('debt_ladder').select('*').order('order_num', { ascending: true }),
+        supabase.from('team_members').select('*').order('created_at', { ascending: true }),
+        supabase.from('tasks').select('*').order('created_at', { ascending: true }),
+        supabase.from('dated_items').select('*').order('created_at', { ascending: true }),
+        supabase.from('scorecard').select('*').order('created_at', { ascending: true }),
+        supabase.from('phases').select('*'),
+        supabase.from('phase_items').select('*')
+      ]);
 
-    try {
-      const { error } = await supabase
-        .from('dashboard_state')
-        .upsert({ id: 'main', data: newState, updated_at: new Date().toISOString() });
-      if (error) console.error('Supabase Save Error:', error);
-      else showFlag('Saved to Supabase');
+      if (hData) setHero(hData);
+      if (cData) setCollections(cData);
+      if (oData) setOutflows(oData);
+      if (dData) setDebtLadder(dData);
+      if (tmData) setTeamMembers(tmData);
+      if (dtData) setDatedItems(dtData);
+      if (scData) setScorecard(scData);
+
+      if (tData) {
+        setTasks({
+          w1: tData.filter(t => t.week_key === 'w1'),
+          w2: tData.filter(t => t.week_key === 'w2')
+        });
+      }
+
+      if (phData) {
+        setPhases(phData.map(ph => ({
+          ...ph,
+          items: phiData ? phiData.filter(item => item.phase_id === ph.id) : []
+        })));
+      }
+
+      setIsLoading(false);
+      setStatusMsg('Relational Supabase DB Connected');
     } catch (err) {
-      console.error('Supabase Error:', err);
+      console.error('Relational fetch error:', err);
+      setIsLoading(false);
+      setStatusMsg('Offline / Fallback Mode');
     }
   };
 
-  // Fetch initial data & subscribe to Realtime
   useEffect(() => {
-    const loadData = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('dashboard_state')
-          .select('data')
-          .eq('id', 'main')
-          .single();
-
-        if (data && data.data) {
-          setState(data.data);
-          setIsLive(true);
-          setStatusMsg('Synced with Supabase DB');
-        } else {
-          const saved = localStorage.getItem('ma_console_db_v4');
-          if (saved) {
-            setState(JSON.parse(saved));
-            setIsLive(true);
-            setStatusMsg('Loaded Local State');
-          } else {
-            setStatusMsg('No DB record found');
-          }
-        }
-      } catch (err) {
-        setIsLive(false);
-        setStatusMsg('Offline / Local Mode');
-      }
-    };
-
     loadData();
 
-    // Subscribe to realtime updates
+    // Subscribe to Realtime changes across all tables
     const channel = supabase
-      .channel('public:dashboard_state')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'dashboard_state' }, (payload) => {
-        if (payload.new && payload.new.data) {
-          setState(payload.new.data);
-          showFlag('Realtime Update Synced!');
-        }
+      .channel('public:relational_tables')
+      .on('postgres_changes', { event: '*', schema: 'public' }, () => {
+        loadData();
+        showFlag('Realtime Update Synced!');
       })
       .subscribe();
 
@@ -88,102 +106,6 @@ export default function Dashboard() {
     };
   }, []);
 
-  if (!state) {
-    return (
-      <div className="wrap" style={{ display: 'grid', placeItems: 'center', minHeight: '80vh' }}>
-        <div className="block" style={{ textAlign: 'center', padding: '40px 60px' }}>
-          <div className="pulse-badge" style={{ marginBottom: '16px' }}>
-            <span className="pulse-dot"></span>
-            Connecting to Supabase Cloud DB...
-          </div>
-          <h2>Operating Console</h2>
-          <p className="muted small">Fetching real-time backend data from Supabase...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Financial Computations
-  const billed = Number(state.hero?.billed || 0);
-  const banked = Number(state.hero?.banked || 0);
-  const bankedPct = billed > 0 ? Math.min(100, Math.round((banked / billed) * 100)) : 0;
-  
-  const collectionsList = state.collections || [];
-  const bankedSum = collectionsList.filter(c => c.done).reduce((acc, c) => acc + Number(c.amount || 0), 0);
-  const grandSum = collectionsList.reduce((acc, c) => acc + Number(c.amount || 0), 0);
-  const gap85Pct = Math.round(billed * 0.85) - banked;
-
-  const totalOutflow = (state.outflows || []).reduce((acc, o) => acc + Number(o.amount || 0), 0);
-  const debtExCar = (state.debtLadder || []).filter(d => !d.isCar).reduce((acc, d) => acc + Number(d.amount || 0), 0);
-
-  const teamList = state.team?.members || [];
-  const salarySum = teamList.reduce((acc, m) => acc + Number(m.pay || 0), 0);
-  const headCount = teamList.length;
-
-  // EXCEL REPORT GENERATOR (.xlsx)
-  const exportToExcel = () => {
-    const wb = XLSX.utils.book_new();
-
-    // Sheet 1: Summary & Hero
-    const summaryData = [
-      ['Metric', 'Value'],
-      ['Billed Monthly Run Rate', state.hero?.billed || 0],
-      ['Banked Revenue', state.hero?.banked || 0],
-      ['Banked Percentage', `${bankedPct}%`],
-      ['Headline Subtext', state.hero?.subtext || ''],
-      ['Notice', state.hero?.notice || '']
-    ];
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(summaryData), 'Summary');
-
-    // Sheet 2: Collections
-    const collectionsData = (state.collections || []).map(c => ({
-      Client: c.name,
-      Amount: c.amount,
-      Status: c.done ? 'Banked' : 'Pending'
-    }));
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(collectionsData), 'Collections');
-
-    // Sheet 3: Monthly Outflows
-    const outflowsData = (state.outflows || []).map(o => ({
-      Item: o.item,
-      Amount: o.amount
-    }));
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(outflowsData), 'Outflows');
-
-    // Sheet 4: Debt Ladder
-    const debtData = (state.debtLadder || []).map(d => ({
-      Order: d.order,
-      Creditor: d.name,
-      Principal: d.amount,
-      Monthly_EMI: d.emi,
-      Terms: d.rate
-    }));
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(debtData), 'Debt Ladder');
-
-    // Sheet 5: Team Roster
-    const teamData = (state.team?.members || []).map(m => ({
-      Name: m.name,
-      Role: m.role,
-      Monthly_Pay: m.pay
-    }));
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(teamData), 'Team');
-
-    // Sheet 6: Tasks
-    const tasksData = [
-      ...(state.tasks?.w1 || []).map(t => ({ Week: 'Week 1', Task: t.title, Rationale: t.why, Status: t.done ? 'Done' : 'Pending' })),
-      ...(state.tasks?.w2 || []).map(t => ({ Week: 'Week 2', Task: t.title, Rationale: t.why, Status: t.done ? 'Done' : 'Pending' }))
-    ];
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(tasksData), 'Tasks');
-
-    XLSX.writeFile(wb, `misc-archive-report-${new Date().toISOString().slice(0, 10)}.xlsx`);
-    showFlag('Excel Report Exported!');
-  };
-
-  // PDF REPORT GENERATOR
-  const exportToPDF = () => {
-    window.print();
-  };
-
   // Modal Helpers
   const openModal = (title, content, onSave) => {
     setModalConfig({ isOpen: true, title, content, onSave });
@@ -191,6 +113,64 @@ export default function Dashboard() {
   const closeModal = () => {
     setModalConfig({ isOpen: false, title: '', content: null, onSave: null });
   };
+
+  // Computations
+  const billed = Number(hero?.billed || 0);
+  const banked = Number(hero?.banked || 0);
+  const bankedPct = billed > 0 ? Math.min(100, Math.round((banked / billed) * 100)) : 0;
+  
+  const bankedSum = collections.filter(c => c.done).reduce((acc, c) => acc + Number(c.amount || 0), 0);
+  const grandSum = collections.reduce((acc, c) => acc + Number(c.amount || 0), 0);
+  const gap85Pct = Math.round(billed * 0.85) - banked;
+
+  const totalOutflow = outflows.reduce((acc, o) => acc + Number(o.amount || 0), 0);
+  const debtExCar = debtLadder.filter(d => !d.is_car).reduce((acc, d) => acc + Number(d.amount || 0), 0);
+
+  const salarySum = teamMembers.reduce((acc, m) => acc + Number(m.pay || 0), 0);
+  const headCount = teamMembers.length;
+
+  // EXCEL REPORT EXPORT
+  const exportToExcel = () => {
+    const wb = XLSX.utils.book_new();
+
+    const summaryData = [
+      ['Metric', 'Value'],
+      ['Billed Monthly Run Rate', billed],
+      ['Banked Revenue', banked],
+      ['Banked Percentage', `${bankedPct}%`],
+      ['Subtext', hero.subtext || ''],
+      ['Notice', hero.notice || '']
+    ];
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(summaryData), 'Summary');
+
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(collections), 'Collections');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(outflows), 'Outflows');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(debtLadder), 'Debt Ladder');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(teamMembers), 'Team');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet([...tasks.w1, ...tasks.w2]), 'Tasks');
+
+    XLSX.writeFile(wb, `misc-archive-report-${new Date().toISOString().slice(0, 10)}.xlsx`);
+    showFlag('Excel Report Exported!');
+  };
+
+  const exportToPDF = () => {
+    window.print();
+  };
+
+  if (isLoading) {
+    return (
+      <div className="wrap" style={{ display: 'grid', placeItems: 'center', minHeight: '80vh' }}>
+        <div className="block" style={{ textAlign: 'center', padding: '40px 60px' }}>
+          <div className="pulse-badge" style={{ marginBottom: '16px' }}>
+            <span className="pulse-dot"></span>
+            Fetching relational tables from Supabase...
+          </div>
+          <h2>Operating Console</h2>
+          <p className="muted small">Loading models: hero_metrics, collections, outflows, debt_ladder, team_members...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="wrap">
@@ -218,7 +198,7 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <p className="hero-sub">{state.hero?.subtext}</p>
+        <p className="hero-sub">{hero.subtext}</p>
 
         <div className="gapviz">
           <div className="gapbar">
@@ -238,7 +218,7 @@ export default function Dashboard() {
           </div>
 
           <p className="tiny muted" style={{ marginTop: '4px' }}>
-            {state.hero?.notice} | <strong>85% Break-even Gap:</strong> {gap85Pct > 0 ? inr(gap85Pct) : 'Achieved!'}
+            {hero.notice} | <strong>85% Break-even Gap:</strong> {gap85Pct > 0 ? inr(gap85Pct) : 'Achieved!'}
           </p>
         </div>
       </header>
@@ -247,13 +227,9 @@ export default function Dashboard() {
       <nav className="tabs" role="tablist">
         {[
           { id: 'p-now', label: 'This Week' },
-          { id: 'p-board', label: 'Day Board' },
           { id: 'p-cash', label: 'Cash & Outflows' },
-          { id: 'p-growth', label: 'Growth Engine' },
-          { id: 'p-90', label: '13 Weeks' },
           { id: 'p-debt', label: 'Debt Ladder' },
           { id: 'p-team', label: 'Team' },
-          { id: 'p-rhythm', label: 'Rhythm' },
           { id: 'p-plan', label: 'The 4 Phases' },
         ].map((tab) => (
           <button
@@ -276,12 +252,12 @@ export default function Dashboard() {
           </div>
           
           <div className="callout red">
-            {(state.datedItems || []).map((it, idx) => (
+            {datedItems.map((it, idx) => (
               <div key={it.id || idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                 <div>
                   <strong>{it.date}: {it.title}</strong> — {it.details}
                 </div>
-                <button className="btn-danger sm-btn" onClick={() => deleteDatedItem(idx)}>del</button>
+                <button className="btn-danger sm-btn" onClick={() => deleteDatedItem(it.id)}>del</button>
               </div>
             ))}
           </div>
@@ -291,18 +267,18 @@ export default function Dashboard() {
               <h2>Week One Actions</h2>
               <button className="ghost sm-btn" onClick={() => addTask('w1')}>+ Add Task</button>
             </div>
-            {(state.tasks?.w1 || []).map((t, idx) => (
-              <div key={t.id || idx} className={`task ${t.done ? 'done' : ''}`}>
+            {tasks.w1.map((t) => (
+              <div key={t.id} className={`task ${t.done ? 'done' : ''}`}>
                 <input
                   type="checkbox"
                   checked={t.done}
-                  onChange={(e) => toggleTask('w1', idx, e.target.checked)}
+                  onChange={(e) => toggleTask(t.id, e.target.checked)}
                 />
                 <label>
                   <strong>{t.title}</strong>
                   <span className="why">{t.why}</span>
                 </label>
-                <button className="btn-danger sm-btn" onClick={() => deleteTask('w1', idx)}>del</button>
+                <button className="btn-danger sm-btn" onClick={() => deleteTask(t.id)}>del</button>
               </div>
             ))}
           </div>
@@ -312,55 +288,31 @@ export default function Dashboard() {
               <h2>Week Two Actions</h2>
               <button className="ghost sm-btn" onClick={() => addTask('w2')}>+ Add Task</button>
             </div>
-            {(state.tasks?.w2 || []).map((t, idx) => (
-              <div key={t.id || idx} className={`task ${t.done ? 'done' : ''}`}>
+            {tasks.w2.map((t) => (
+              <div key={t.id} className={`task ${t.done ? 'done' : ''}`}>
                 <input
                   type="checkbox"
                   checked={t.done}
-                  onChange={(e) => toggleTask('w2', idx, e.target.checked)}
+                  onChange={(e) => toggleTask(t.id, e.target.checked)}
                 />
                 <label>
                   <strong>{t.title}</strong>
                   <span className="why">{t.why}</span>
                 </label>
-                <button className="btn-danger sm-btn" onClick={() => deleteTask('w2', idx)}>del</button>
+                <button className="btn-danger sm-btn" onClick={() => deleteTask(t.id)}>del</button>
               </div>
             ))}
           </div>
         </section>
       )}
 
-      {/* PANEL 2: DAY BOARD */}
-      {activeTab === 'p-board' && (
-        <section className="panel">
-          <div className="grid3">
-            {['morning', 'midday', 'afternoon'].map((slotKey) => (
-              <div key={slotKey} className="block">
-                <div className="block-header">
-                  <h3 style={{ textTransform: 'capitalize' }}>{slotKey} Block</h3>
-                  <button className="ghost sm-btn" onClick={() => addDaySlot(slotKey)}>+ Slot</button>
-                </div>
-                {(state.dayBoard?.[slotKey] || []).map((slot, idx) => (
-                  <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid var(--border)' }}>
-                    <div>
-                      <span className="num tiny muted">{slot.time}</span> — <strong>{slot.task}</strong>
-                    </div>
-                    <button className="btn-danger sm-btn" onClick={() => deleteDaySlot(slotKey, idx)}>del</button>
-                  </div>
-                ))}
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* PANEL 3: CASH & OUTFLOWS */}
+      {/* PANEL 2: CASH & OUTFLOWS */}
       {activeTab === 'p-cash' && (
         <section className="panel">
           <div className="grid2">
             <div className="block">
               <div className="block-header">
-                <h2>Retainer Collections</h2>
+                <h2>Retainer Collections (Table: `collections`)</h2>
                 <button className="ghost sm-btn" onClick={() => addCollection()}>+ Add Client</button>
               </div>
               <table>
@@ -373,18 +325,18 @@ export default function Dashboard() {
                   </tr>
                 </thead>
                 <tbody>
-                  {(state.collections || []).map((c, idx) => (
-                    <tr key={c.id || idx}>
+                  {collections.map((c) => (
+                    <tr key={c.id}>
                       <td>
                         <input
                           type="checkbox"
                           checked={c.done}
-                          onChange={(e) => toggleCollection(idx, e.target.checked)}
+                          onChange={(e) => toggleCollection(c.id, e.target.checked)}
                         />
                       </td>
                       <td>{c.name}</td>
                       <td className="n">{inr(c.amount)}</td>
-                      <td><button className="btn-danger sm-btn" onClick={() => deleteCollection(idx)}>del</button></td>
+                      <td><button className="btn-danger sm-btn" onClick={() => deleteCollection(c.id)}>del</button></td>
                     </tr>
                   ))}
                   <tr className="total">
@@ -398,7 +350,7 @@ export default function Dashboard() {
 
             <div className="block">
               <div className="block-header">
-                <h2>Monthly Outflows</h2>
+                <h2>Monthly Outflows (Table: `outflows`)</h2>
                 <button className="ghost sm-btn" onClick={() => addOutflow()}>+ Add Outflow</button>
               </div>
               <table>
@@ -410,11 +362,11 @@ export default function Dashboard() {
                   </tr>
                 </thead>
                 <tbody>
-                  {(state.outflows || []).map((o, idx) => (
-                    <tr key={o.id || idx}>
+                  {outflows.map((o) => (
+                    <tr key={o.id}>
                       <td>{o.item}</td>
                       <td className="n">{inr(o.amount)}</td>
-                      <td><button className="btn-danger sm-btn" onClick={() => deleteOutflow(idx)}>del</button></td>
+                      <td><button className="btn-danger sm-btn" onClick={() => deleteOutflow(o.id)}>del</button></td>
                     </tr>
                   ))}
                   <tr className="total">
@@ -429,30 +381,12 @@ export default function Dashboard() {
         </section>
       )}
 
-      {/* PANEL 4: GROWTH ENGINE */}
-      {activeTab === 'p-growth' && (
-        <section className="panel">
-          <div className="block">
-            <h2>Revenue Rungs</h2>
-            <p className="small muted" style={{ marginBottom: '14px' }}>Target: {state.growthTarget?.label}</p>
-            <div className="grid3">
-              {(state.revenueLadder || []).map((rung, idx) => (
-                <div key={rung.id || idx} className="stat">
-                  <span className="k">{rung.name}</span>
-                  <span className={`tagl ${rung.tagType || 'a'}`}>{rung.tag}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* PANEL 6: DEBT LADDER */}
+      {/* PANEL 3: DEBT LADDER */}
       {activeTab === 'p-debt' && (
         <section className="panel">
           <div className="block">
             <div className="block-header">
-              <h2>Structured Debt Ladder</h2>
+              <h2>Structured Debt Ladder (Table: `debt_ladder`)</h2>
               <button className="ghost sm-btn" onClick={() => addDebtItem()}>+ Add Debt</button>
             </div>
             <table>
@@ -466,13 +400,13 @@ export default function Dashboard() {
                 </tr>
               </thead>
               <tbody>
-                {(state.debtLadder || []).map((d, idx) => (
-                  <tr key={d.id || idx}>
-                    <td className="num">{d.order}</td>
+                {debtLadder.map((d) => (
+                  <tr key={d.id}>
+                    <td className="num">{d.order_num}</td>
                     <td><strong>{d.name}</strong> <span className="tiny muted">({d.rate})</span></td>
                     <td className="n">{inr(d.amount)}</td>
                     <td className="n">{inr(d.emi)}</td>
-                    <td><button className="btn-danger sm-btn" onClick={() => deleteDebtItem(idx)}>del</button></td>
+                    <td><button className="btn-danger sm-btn" onClick={() => deleteDebtItem(d.id)}>del</button></td>
                   </tr>
                 ))}
                 <tr className="total">
@@ -486,12 +420,12 @@ export default function Dashboard() {
         </section>
       )}
 
-      {/* PANEL 7: TEAM */}
+      {/* PANEL 4: TEAM */}
       {activeTab === 'p-team' && (
         <section className="panel">
           <div className="grid2">
             <div className="block">
-              <h2>Team Roster</h2>
+              <h2>Team Roster (Table: `team_members`)</h2>
               <table>
                 <thead>
                   <tr>
@@ -501,15 +435,15 @@ export default function Dashboard() {
                   </tr>
                 </thead>
                 <tbody>
-                  {teamList.map((m, idx) => (
-                    <tr key={m.id || idx}>
+                  {teamMembers.map((m) => (
+                    <tr key={m.id}>
                       <td><strong>{m.name}</strong></td>
                       <td>{m.role}</td>
                       <td className="n">{inr(m.pay)}</td>
                     </tr>
                   ))}
                   <tr className="total">
-                    <td colSpan="2">Total Monthly Payroll ({headCount} heads)</td>
+                    <td colSpan="2">Total Payroll ({headCount} heads)</td>
                     <td className="n">{inr(salarySum)}</td>
                   </tr>
                 </tbody>
@@ -517,7 +451,7 @@ export default function Dashboard() {
             </div>
 
             <div className="block">
-              <h2>Key Metrics</h2>
+              <h2>Key Team Metrics</h2>
               <div className="stat" style={{ marginBottom: '12px' }}>
                 <span className="k">{inr(headCount > 0 ? billed / headCount : 0)}</span>
                 <span className="l">Revenue Per Team Member</span>
@@ -531,16 +465,21 @@ export default function Dashboard() {
         </section>
       )}
 
-      {/* PANEL 9: 4 PHASES */}
+      {/* PANEL 5: 4 PHASES */}
       {activeTab === 'p-plan' && (
         <section className="panel">
           <div className="block">
-            <h2>The 4 Strategic Phases</h2>
-            {(state.phases || []).map((ph, pIdx) => (
-              <div key={ph.id || pIdx} style={{ borderLeft: '3px solid var(--teal)', paddingLeft: '16px', marginBottom: '20px' }}>
+            <h2>The 4 Strategic Phases (Table: `phases`)</h2>
+            {phases.map((ph) => (
+              <div key={ph.id} style={{ borderLeft: '3px solid var(--teal)', paddingLeft: '16px', marginBottom: '20px' }}>
                 <p className="tiny muted num">{ph.timeline}</p>
                 <h3>{ph.title}</h3>
-                <p className="small muted"><strong>Done looks like:</strong> {ph.doneLooksLike}</p>
+                <p className="small muted"><strong>Done looks like:</strong> {ph.done_looks_like}</p>
+                <ul className="plain small" style={{ marginTop: '8px' }}>
+                  {(ph.items || []).map((it) => (
+                    <li key={it.id}>• {it.text}</li>
+                  ))}
+                </ul>
               </div>
             ))}
           </div>
@@ -555,10 +494,8 @@ export default function Dashboard() {
         <button className="ghost" onClick={exportToPDF} style={{ borderColor: 'var(--ochre)', color: 'var(--ochre)', fontWeight: 600 }}>
           📄 Export PDF Report
         </button>
-        <button className="ghost" onClick={() => resetToDefault()}>Reset State Defaults</button>
         <span className="saveflag">{statusMsg}</span>
       </div>
-
 
       {/* CRUD MODAL */}
       <Modal
@@ -575,45 +512,33 @@ export default function Dashboard() {
     </div>
   );
 
-  // --- CRUD ACTION HANDLERS ---
-  function editHeroStats() {
-    let bVal = state.hero?.billed || 0;
-    let kVal = state.hero?.banked || 0;
-    let sub = state.hero?.subtext || '';
-    let not = state.hero?.notice || '';
+  // --- RELATIONAL CRUD ACTIONS ---
+  async function editHeroStats() {
+    let bVal = hero.billed;
+    let kVal = hero.banked;
+    let sub = hero.subtext || '';
+    let not = hero.notice || '';
 
     openModal(
       'Edit Hero Financial Stats',
       (
         <>
-          <div className="form-group">
-            <label>Billed Monthly Run Rate (₹)</label>
-            <input type="number" defaultValue={bVal} onChange={(e) => (bVal = e.target.value)} />
-          </div>
-          <div className="form-group">
-            <label>Banked Monthly Revenue (₹)</label>
-            <input type="number" defaultValue={kVal} onChange={(e) => (kVal = e.target.value)} />
-          </div>
-          <div className="form-group">
-            <label>Headline Subtext</label>
-            <textarea defaultValue={sub} onChange={(e) => (sub = e.target.value)} />
-          </div>
-          <div className="form-group">
-            <label>Critical Notice Banner</label>
-            <textarea defaultValue={not} onChange={(e) => (not = e.target.value)} />
-          </div>
+          <div className="form-group"><label>Billed Monthly Run Rate (₹)</label><input type="number" defaultValue={bVal} onChange={(e) => (bVal = e.target.value)} /></div>
+          <div className="form-group"><label>Banked Monthly Revenue (₹)</label><input type="number" defaultValue={kVal} onChange={(e) => (kVal = e.target.value)} /></div>
+          <div className="form-group"><label>Headline Subtext</label><textarea defaultValue={sub} onChange={(e) => (sub = e.target.value)} /></div>
+          <div className="form-group"><label>Critical Notice Banner</label><textarea defaultValue={not} onChange={(e) => (not = e.target.value)} /></div>
         </>
       ),
-      () => {
-        saveState({
-          ...state,
-          hero: { billed: Number(bVal), banked: Number(kVal), subtext: sub, notice: not },
-        });
+      async () => {
+        const payload = { id: 'main', billed: Number(bVal), banked: Number(kVal), subtext: sub, notice: not };
+        setHero(payload);
+        await supabase.from('hero_metrics').upsert(payload);
+        showFlag('Hero Metrics Saved');
       }
     );
   }
 
-  function addDatedItem() {
+  async function addDatedItem() {
     let date = '', title = '', details = '';
     openModal(
       'Add Dated & Critical Item',
@@ -624,68 +549,54 @@ export default function Dashboard() {
           <div className="form-group"><label>Details</label><textarea onChange={(e) => (details = e.target.value)} /></div>
         </>
       ),
-      () => {
-        const list = [...(state.datedItems || []), { id: 'dt_' + Date.now(), date, title, details, urgent: true }];
-        saveState({ ...state, datedItems: list });
+      async () => {
+        const item = { id: 'dt_' + Date.now(), date, title, details, urgent: true };
+        setDatedItems([...datedItems, item]);
+        await supabase.from('dated_items').insert(item);
+        showFlag('Item Added');
       }
     );
   }
-  function deleteDatedItem(idx) {
-    const list = [...(state.datedItems || [])];
-    list.splice(idx, 1);
-    saveState({ ...state, datedItems: list });
+  async function deleteDatedItem(id) {
+    setDatedItems(datedItems.filter(it => it.id !== id));
+    await supabase.from('dated_items').delete().eq('id', id);
+    showFlag('Item Deleted');
   }
 
-  function addTask(wKey) {
+  async function addTask(week_key) {
     let title = '', why = '';
     openModal(
-      `Add ${wKey === 'w1' ? 'Week One' : 'Week Two'} Task`,
+      `Add ${week_key === 'w1' ? 'Week One' : 'Week Two'} Task`,
       (
         <>
           <div className="form-group"><label>Task Title</label><input type="text" onChange={(e) => (title = e.target.value)} /></div>
           <div className="form-group"><label>Why / Rationale</label><textarea onChange={(e) => (why = e.target.value)} /></div>
         </>
       ),
-      () => {
-        const list = [...(state.tasks?.[wKey] || []), { id: `${wKey}_` + Date.now(), title, why, done: false }];
-        saveState({ ...state, tasks: { ...state.tasks, [wKey]: list } });
+      async () => {
+        const item = { id: `${week_key}_` + Date.now(), week_key, title, why, done: false };
+        setTasks({ ...tasks, [week_key]: [...tasks[week_key], item] });
+        await supabase.from('tasks').insert(item);
+        showFlag('Task Added');
       }
     );
   }
-  function toggleTask(wKey, idx, done) {
-    const list = [...(state.tasks?.[wKey] || [])];
-    list[idx].done = done;
-    saveState({ ...state, tasks: { ...state.tasks, [wKey]: list } });
+  async function toggleTask(id, done) {
+    setTasks({
+      w1: tasks.w1.map(t => (t.id === id ? { ...t, done } : t)),
+      w2: tasks.w2.map(t => (t.id === id ? { ...t, done } : t))
+    });
+    await supabase.from('tasks').update({ done }).eq('id', id);
   }
-  function deleteTask(wKey, idx) {
-    const list = [...(state.tasks?.[wKey] || [])];
-    list.splice(idx, 1);
-    saveState({ ...state, tasks: { ...state.tasks, [wKey]: list } });
-  }
-
-  function addDaySlot(slotKey) {
-    let time = '', task = '';
-    openModal(
-      `Add ${slotKey} Slot`,
-      (
-        <>
-          <div className="form-group"><label>Time Label (e.g. 09:30)</label><input type="text" onChange={(e) => (time = e.target.value)} /></div>
-          <div className="form-group"><label>Task Description</label><input type="text" onChange={(e) => (task = e.target.value)} /></div>
-        </>
-      ),
-      () => {
-        const list = [...(state.dayBoard?.[slotKey] || []), { time, task }];
-        saveState({ ...state, dayBoard: { ...state.dayBoard, [slotKey]: list } });
-      }
-    );
-  }
-  function deleteDaySlot(slotKey, idx) {
-    const list = [...(state.dayBoard?.[slotKey] || [])];
-    list.splice(idx, 1);
-    saveState({ ...state, dayBoard: { ...state.dayBoard, [slotKey]: list } });
+  async function deleteTask(id) {
+    setTasks({
+      w1: tasks.w1.filter(t => t.id !== id),
+      w2: tasks.w2.filter(t => t.id !== id)
+    });
+    await supabase.from('tasks').delete().eq('id', id);
   }
 
-  function addCollection() {
+  async function addCollection() {
     let name = '', amount = 0;
     openModal(
       'Add Retainer Client Collection',
@@ -695,24 +606,24 @@ export default function Dashboard() {
           <div className="form-group"><label>Amount (₹)</label><input type="number" onChange={(e) => (amount = e.target.value)} /></div>
         </>
       ),
-      () => {
-        const list = [...(state.collections || []), { id: 'col_' + Date.now(), name, amount: Number(amount), done: false }];
-        saveState({ ...state, collections: list });
+      async () => {
+        const item = { id: 'col_' + Date.now(), name, amount: Number(amount), done: false };
+        setCollections([...collections, item]);
+        await supabase.from('collections').insert(item);
+        showFlag('Collection Added');
       }
     );
   }
-  function toggleCollection(idx, done) {
-    const list = [...(state.collections || [])];
-    list[idx].done = done;
-    saveState({ ...state, collections: list });
+  async function toggleCollection(id, done) {
+    setCollections(collections.map(c => (c.id === id ? { ...c, done } : c)));
+    await supabase.from('collections').update({ done }).eq('id', id);
   }
-  function deleteCollection(idx) {
-    const list = [...(state.collections || [])];
-    list.splice(idx, 1);
-    saveState({ ...state, collections: list });
+  async function deleteCollection(id) {
+    setCollections(collections.filter(c => c.id !== id));
+    await supabase.from('collections').delete().eq('id', id);
   }
 
-  function addOutflow() {
+  async function addOutflow() {
     let item = '', amount = 0;
     openModal(
       'Add Monthly Outflow Commitment',
@@ -722,19 +633,20 @@ export default function Dashboard() {
           <div className="form-group"><label>Monthly Amount (₹)</label><input type="number" onChange={(e) => (amount = e.target.value)} /></div>
         </>
       ),
-      () => {
-        const list = [...(state.outflows || []), { id: 'out_' + Date.now(), item, amount: Number(amount) }];
-        saveState({ ...state, outflows: list });
+      async () => {
+        const payload = { id: 'out_' + Date.now(), item, amount: Number(amount), type: 'business' };
+        setOutflows([...outflows, payload]);
+        await supabase.from('outflows').insert(payload);
+        showFlag('Outflow Added');
       }
     );
   }
-  function deleteOutflow(idx) {
-    const list = [...(state.outflows || [])];
-    list.splice(idx, 1);
-    saveState({ ...state, outflows: list });
+  async function deleteOutflow(id) {
+    setOutflows(outflows.filter(o => o.id !== id));
+    await supabase.from('outflows').delete().eq('id', id);
   }
 
-  function addDebtItem() {
+  async function addDebtItem() {
     let name = '', amount = 0, emi = 0, rate = 'EMI';
     openModal(
       'Add Debt Entry',
@@ -746,21 +658,16 @@ export default function Dashboard() {
           <div className="form-group"><label>Rate / Terms</label><input type="text" onChange={(e) => (rate = e.target.value)} /></div>
         </>
       ),
-      () => {
-        const list = [...(state.debtLadder || []), { id: 'debt_' + Date.now(), order: (state.debtLadder?.length || 0) + 1, name, amount: Number(amount), emi: Number(emi), rate, isCar: false }];
-        saveState({ ...state, debtLadder: list });
+      async () => {
+        const item = { id: 'debt_' + Date.now(), order_num: debtLadder.length + 1, name, amount: Number(amount), emi: Number(emi), rate, is_car: false };
+        setDebtLadder([...debtLadder, item]);
+        await supabase.from('debt_ladder').insert(item);
+        showFlag('Debt Item Added');
       }
     );
   }
-  function deleteDebtItem(idx) {
-    const list = [...(state.debtLadder || [])];
-    list.splice(idx, 1);
-    saveState({ ...state, debtLadder: list });
-  }
-
-  function resetToDefault() {
-    if (confirm('Reset to initial db.json snapshot?')) {
-      saveState(initialDb);
-    }
+  async function deleteDebtItem(id) {
+    setDebtLadder(debtLadder.filter(d => d.id !== id));
+    await supabase.from('debt_ladder').delete().eq('id', id);
   }
 }

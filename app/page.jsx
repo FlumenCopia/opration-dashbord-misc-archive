@@ -3,23 +3,10 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import Modal from '@/components/Modal';
-
-const defaultState = {
-  hero: { billed: 646617, banked: 179863, subtext: "Misc Archive Private Limited. From here the whole outcome turns on a single number.", notice: "At 85% collection you break even. At 90% plus ₹1L of new recurring revenue you build wealth." },
-  datedItems: [],
-  tasks: { w1: [], w2: [] },
-  dayBoard: { morning: [], midday: [], afternoon: [] },
-  collections: [],
-  outflows: [],
-  growthTarget: { label: "₹10L/mo" },
-  revenueLadder: [],
-  debtLadder: [],
-  team: { members: [] },
-  phases: []
-};
+import * as XLSX from 'xlsx';
 
 export default function Dashboard() {
-  const [state, setState] = useState(defaultState);
+  const [state, setState] = useState(null);
   const [activeTab, setActiveTab] = useState('p-now');
   const [statusMsg, setStatusMsg] = useState('Connecting to Supabase...');
   const [isLive, setIsLive] = useState(false);
@@ -68,11 +55,14 @@ export default function Dashboard() {
           setIsLive(true);
           setStatusMsg('Synced with Supabase DB');
         } else {
-          // Try local storage
           const saved = localStorage.getItem('ma_console_db_v4');
-          if (saved) setState(JSON.parse(saved));
-          setIsLive(true);
-          setStatusMsg('Loaded Local State');
+          if (saved) {
+            setState(JSON.parse(saved));
+            setIsLive(true);
+            setStatusMsg('Loaded Local State');
+          } else {
+            setStatusMsg('No DB record found');
+          }
         }
       } catch (err) {
         setIsLive(false);
@@ -98,13 +88,20 @@ export default function Dashboard() {
     };
   }, []);
 
-  // Modal Helpers
-  const openModal = (title, content, onSave) => {
-    setModalConfig({ isOpen: true, title, content, onSave });
-  };
-  const closeModal = () => {
-    setModalConfig({ isOpen: false, title: '', content: null, onSave: null });
-  };
+  if (!state) {
+    return (
+      <div className="wrap" style={{ display: 'grid', placeItems: 'center', minHeight: '80vh' }}>
+        <div className="block" style={{ textAlign: 'center', padding: '40px 60px' }}>
+          <div className="pulse-badge" style={{ marginBottom: '16px' }}>
+            <span className="pulse-dot"></span>
+            Connecting to Supabase Cloud DB...
+          </div>
+          <h2>Operating Console</h2>
+          <p className="muted small">Fetching real-time backend data from Supabase...</p>
+        </div>
+      </div>
+    );
+  }
 
   // Financial Computations
   const billed = Number(state.hero?.billed || 0);
@@ -123,6 +120,78 @@ export default function Dashboard() {
   const salarySum = teamList.reduce((acc, m) => acc + Number(m.pay || 0), 0);
   const headCount = teamList.length;
 
+  // EXCEL REPORT GENERATOR (.xlsx)
+  const exportToExcel = () => {
+    const wb = XLSX.utils.book_new();
+
+    // Sheet 1: Summary & Hero
+    const summaryData = [
+      ['Metric', 'Value'],
+      ['Billed Monthly Run Rate', state.hero?.billed || 0],
+      ['Banked Revenue', state.hero?.banked || 0],
+      ['Banked Percentage', `${bankedPct}%`],
+      ['Headline Subtext', state.hero?.subtext || ''],
+      ['Notice', state.hero?.notice || '']
+    ];
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(summaryData), 'Summary');
+
+    // Sheet 2: Collections
+    const collectionsData = (state.collections || []).map(c => ({
+      Client: c.name,
+      Amount: c.amount,
+      Status: c.done ? 'Banked' : 'Pending'
+    }));
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(collectionsData), 'Collections');
+
+    // Sheet 3: Monthly Outflows
+    const outflowsData = (state.outflows || []).map(o => ({
+      Item: o.item,
+      Amount: o.amount
+    }));
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(outflowsData), 'Outflows');
+
+    // Sheet 4: Debt Ladder
+    const debtData = (state.debtLadder || []).map(d => ({
+      Order: d.order,
+      Creditor: d.name,
+      Principal: d.amount,
+      Monthly_EMI: d.emi,
+      Terms: d.rate
+    }));
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(debtData), 'Debt Ladder');
+
+    // Sheet 5: Team Roster
+    const teamData = (state.team?.members || []).map(m => ({
+      Name: m.name,
+      Role: m.role,
+      Monthly_Pay: m.pay
+    }));
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(teamData), 'Team');
+
+    // Sheet 6: Tasks
+    const tasksData = [
+      ...(state.tasks?.w1 || []).map(t => ({ Week: 'Week 1', Task: t.title, Rationale: t.why, Status: t.done ? 'Done' : 'Pending' })),
+      ...(state.tasks?.w2 || []).map(t => ({ Week: 'Week 2', Task: t.title, Rationale: t.why, Status: t.done ? 'Done' : 'Pending' }))
+    ];
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(tasksData), 'Tasks');
+
+    XLSX.writeFile(wb, `misc-archive-report-${new Date().toISOString().slice(0, 10)}.xlsx`);
+    showFlag('Excel Report Exported!');
+  };
+
+  // PDF REPORT GENERATOR
+  const exportToPDF = () => {
+    window.print();
+  };
+
+  // Modal Helpers
+  const openModal = (title, content, onSave) => {
+    setModalConfig({ isOpen: true, title, content, onSave });
+  };
+  const closeModal = () => {
+    setModalConfig({ isOpen: false, title: '', content: null, onSave: null });
+  };
+
   return (
     <div className="wrap">
       {/* HERO HEADER */}
@@ -132,11 +201,17 @@ export default function Dashboard() {
             <h1>Operating Console</h1>
             <p className="tiny muted">Misc Archive Private Limited</p>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
             <span className="pulse-badge">
               <span className="pulse-dot"></span>
               {statusMsg}
             </span>
+            <button className="ghost sm-btn" onClick={exportToExcel} style={{ borderColor: 'var(--teal)', color: 'var(--teal)', fontWeight: 600 }}>
+              📊 Export Excel (.xlsx)
+            </button>
+            <button className="ghost sm-btn" onClick={exportToPDF} style={{ borderColor: 'var(--ochre)', color: 'var(--ochre)', fontWeight: 600 }}>
+              📄 Export PDF Report
+            </button>
             <button className="ghost sm-btn" onClick={() => editHeroStats()}>
               Edit Stats
             </button>
@@ -474,9 +549,16 @@ export default function Dashboard() {
 
       {/* FOOTER ACTION BAR */}
       <div className="resetbar">
-        <button className="ghost" onClick={() => resetToDefault()}>Reload db.json Defaults</button>
+        <button className="ghost" onClick={exportToExcel} style={{ borderColor: 'var(--teal)', color: 'var(--teal)', fontWeight: 600 }}>
+          📊 Export Excel (.xlsx)
+        </button>
+        <button className="ghost" onClick={exportToPDF} style={{ borderColor: 'var(--ochre)', color: 'var(--ochre)', fontWeight: 600 }}>
+          📄 Export PDF Report
+        </button>
+        <button className="ghost" onClick={() => resetToDefault()}>Reset State Defaults</button>
         <span className="saveflag">{statusMsg}</span>
       </div>
+
 
       {/* CRUD MODAL */}
       <Modal

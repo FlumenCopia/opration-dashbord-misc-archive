@@ -117,8 +117,17 @@ BEGIN
   END LOOP;
 END $$;
 
--- ENABLE REALTIME ON ALL TABLES
-ALTER PUBLICATION supabase_realtime ADD TABLE hero_metrics, dated_items, tasks, collections, outflows, debt_ladder, team_members, scorecard, phases, phase_items;
+-- ENABLE REALTIME ON ALL TABLES SAFELY
+DO $$
+BEGIN
+  BEGIN
+    ALTER PUBLICATION supabase_realtime ADD TABLE hero_metrics, dated_items, tasks, collections, outflows, debt_ladder, team_members, scorecard, phases, phase_items;
+  EXCEPTION
+    WHEN duplicate_object THEN NULL;
+    WHEN others THEN NULL;
+  END;
+END $$;
+
 
 -- ============================================================
 -- INITIAL SEED DATA
